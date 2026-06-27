@@ -3,6 +3,6 @@
 # Input core configuration
 #
 config HX9023S_SAR
-    tristate "Support for HX9023S sar sensor"
-    help
-      Say Y to enable support for HX9023S_SAR.
+	tristate "Support for HX9023S sar sensor"
+	help
+	  Say Y to enable support for HX9023S_SAR.
