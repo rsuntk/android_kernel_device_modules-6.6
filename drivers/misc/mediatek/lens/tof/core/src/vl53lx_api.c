@@ -32,6 +32,7 @@
 #ifndef MIN
 #define MIN(v1, v2) ((v1) < (v2) ? (v1) : (v2))
 #endif
+
 #ifndef MAX
 #define MAX(v1, v2) ((v1) < (v2) ? (v2) : (v1))
 #endif
