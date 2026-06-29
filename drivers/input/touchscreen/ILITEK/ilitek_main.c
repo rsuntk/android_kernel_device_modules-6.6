@@ -765,7 +765,7 @@ static int ilitek_touch_down(int id, int x, int y, int p, int h, int w)
 #ifdef CONFIG_MTK_BOOT
 #ifndef MTK_UNDTS
 	if (tpd_dts_data.use_tpd_button) {
-		if (FACTORY_BOOT == get_boot_mode() || RECOVERY_BOOT == get_boot_mode()) {
+		if (get_boot_mode() == FACTORY_BOOT) {
 			tpd_button(x, y, 1);
 			tp_dbg("[ilitek]tpd_button(x, y, 1) = tpd_button(%d, %d, 1)\n", x, y);
 		}
@@ -796,8 +796,7 @@ static int ilitek_touch_release(int id)
 #ifdef CONFIG_MTK_BOOT
 #ifndef MTK_UNDTS
 	if (tpd_dts_data.use_tpd_button) {
-		if (FACTORY_BOOT == get_boot_mode() ||
-		    RECOVERY_BOOT == get_boot_mode()) {
+		if (get_boot_mode() == FACTORY_BOOT) {
 			tpd_button(0, 0, 0);
 			tp_dbg("tpd_button(x, y, 0) = tpd_button(0, 0, 0)\n");
 		}
