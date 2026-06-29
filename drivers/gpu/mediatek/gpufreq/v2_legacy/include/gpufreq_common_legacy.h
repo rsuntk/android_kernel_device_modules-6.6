@@ -41,7 +41,6 @@
 		.addr = _addr,                 \
 		.val = _val,                   \
 	}
-
 #ifndef MAX
 #define MAX(x, y) (((x) < (y)) ? (y) : (x))
 #endif
