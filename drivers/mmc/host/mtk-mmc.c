@@ -2314,32 +2314,32 @@ static irqreturn_t msdc_thread_irq(int irq, void *dev_id)
 		}
 		if (dump_bag.err_bitmap[0] & (ERR_CMD_CRC | ERR_CMD_TMO)) {
 			if (dump_bag.err_bitmap[0] & ERR_CMD_CRC)
-				dev_info(host->dev, "At time:%lld cmd_crc happen cmd=%d arg=0x%X; rsp 0x%X;\n",
+				dev_dbg(host->dev, "At time:%lld cmd_crc happen cmd=%d arg=0x%X; rsp 0x%X;\n",
 					dump_bag.irq_timestamp, dump_bag.cmd_opcode, dump_bag.cmd_arg,
 					dump_bag.cmd_rsp);
 			if (dump_bag.err_bitmap[0] & ERR_CMD_TMO)
-				dev_info(host->dev, "At time:%lld cmd_tmo happen cmd=%d arg=0x%X; rsp 0x%X;\n",
+				dev_dbg(host->dev, "At time:%lld cmd_tmo happen cmd=%d arg=0x%X; rsp 0x%X;\n",
 					dump_bag.irq_timestamp, dump_bag.cmd_opcode, dump_bag.cmd_arg,
 					dump_bag.cmd_rsp);
 		}
 		if (dump_bag.err_bitmap[0] & (ERR_DAT_CRC | ERR_DAT_TMO)) {
 			if (dump_bag.err_bitmap[0] & ERR_DAT_CRC)
-				dev_info(host->dev, "At time:%lld dat_crc happen cmd=%d; blocks=%d; xfer_size=%d;\n",
+				dev_dbg(host->dev, "At time:%lld dat_crc happen cmd=%d; blocks=%d; xfer_size=%d;\n",
 					dump_bag.irq_timestamp, dump_bag.cmd_opcode, dump_bag.blocks,
 					dump_bag.bytes_xfered);
 			if (dump_bag.err_bitmap[0] & ERR_DAT_TMO)
-				dev_info(host->dev, "At time:%lld dat_tmo happen cmd=%d; blocks=%d; xfer_size=%d;\n",
+				dev_dbg(host->dev, "At time:%lld dat_tmo happen cmd=%d; blocks=%d; xfer_size=%d;\n",
 					dump_bag.irq_timestamp, dump_bag.cmd_opcode, dump_bag.blocks,
 					dump_bag.bytes_xfered);
 		}
 		if (dump_bag.err_bitmap[0] & (ERR_MSDC_FIFOCS_CLR_TIMEOUT | ERR_MSDC_DMA_CFG_STS_TIMEOUT)) {
 			if (dump_bag.err_bitmap[0] & ERR_MSDC_FIFOCS_CLR_TIMEOUT) {
-				dev_info(host->dev, "At time:%lld ERR_MSDC_FIFOCS_CLR_TIMEOUT happen\n",
+				dev_dbg(host->dev, "At time:%lld ERR_MSDC_FIFOCS_CLR_TIMEOUT happen\n",
 					dump_bag.irq_timestamp);
 				msdc_dump_register_from_buf(host, 0);
 			}
 			if (dump_bag.err_bitmap[0] & ERR_MSDC_DMA_CFG_STS_TIMEOUT) {
-				dev_info(host->dev, "At time:%lld ERR_MSDC_DMA_CFG_STS_TIMEOUT happen\n",
+				dev_dbg(host->dev, "At time:%lld ERR_MSDC_DMA_CFG_STS_TIMEOUT happen\n",
 					dump_bag.irq_timestamp);
 				msdc_dump_register_from_buf(host, 1);
 			}
@@ -2711,7 +2711,7 @@ static void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		break;
 	case MMC_POWER_ON:
 		if (mmc->supply.vqmmc == NULL || IS_ERR(mmc->supply.vqmmc)) {
-			dev_info(host->dev, "vqmmc is null, not set!\n");
+			dev_dbg(host->dev, "vqmmc is null, not set!\n");
 			break;
 		}
 		if (!IS_ERR(mmc->supply.vqmmc) && !host->vqmmc_enabled) {
