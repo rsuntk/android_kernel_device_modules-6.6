@@ -523,10 +523,8 @@ int upm6910_get_vbus_value(struct upm6910 *upm,  int *val)
 		"read vbus_dect channel fail, ret=%d\n", ret);
 		return ret;
 	}
-	//*val = temp / 100;
-	*val = temp * 369 / 39;
-	dev_err(upm->dev,"%s: vbus_volt = %d \n", __func__, *val);
 
+	*val = temp * 369 / 39;
 	return ret;
 }
 
@@ -1903,6 +1901,7 @@ static int upm6910_detect_device(struct upm6910 *upm)
 
 static void upm6910_dump_regs(struct upm6910 *upm)
 {
+#if 0
 	int addr;
 	u8 val;
 	int ret;
@@ -1912,10 +1911,12 @@ static void upm6910_dump_regs(struct upm6910 *upm)
 		if (ret == 0)
 			pr_err("Reg[%.2x] = 0x%.2x\n", addr, val);
 	}
+#endif
 }
 
 static void sgm41513d_dump_regs(struct upm6910 *upm)
 {
+#if 0
 	int addr;
 	u8 val;
 	int ret;
@@ -1925,6 +1926,7 @@ static void sgm41513d_dump_regs(struct upm6910 *upm)
 		if (ret == 0)
 			pr_err("Reg[%.2x] = 0x%.2x\n", addr, val);
 	}
+#endif
 }
 
 static ssize_t
@@ -1998,8 +2000,8 @@ static int upm6910_charging(struct charger_device *chg_dev, bool enable)
 	else
 		ret = upm6910_disable_charger(upm);
 
-	pr_err("%s charger %s\n", enable ? "enable" : "disable",
-	       !ret ? "successfully" : "failed");
+	if (unlikely(ret))
+		pr_err("%s charging failed, ret: %d\n", enable ? "enable" : "disable", ret);
 
 	ret = upm6910_read_byte(upm, UPM6910_REG_01, &val[0]);
 	ret |= upm6910_read_byte(upm, UPM6910_REG_01, &val[1]);
@@ -2081,8 +2083,6 @@ static int upm6910_set_ichg(struct charger_device *chg_dev, u32 curr)
 {
 	struct upm6910 *upm = dev_get_drvdata(&chg_dev->dev);
 
-	pr_err("charge curr = %d\n", curr);
-
 	if(upm->part_no == SGM41513D)
 		return sgm41513d_set_chargecurrent(upm, curr / 1000);
 	else
@@ -2099,8 +2099,6 @@ static int upm6910_get_min_ichg(struct charger_device *chg_dev, u32 *curr)
 static int upm6910_set_vchg(struct charger_device *chg_dev, u32 volt)
 {
 	struct upm6910 *upm = dev_get_drvdata(&chg_dev->dev);
-
-	pr_err("charge volt = %d\n", volt);
 
 	return upm6910_set_chargevolt(upm, volt / 1000);
 }
@@ -2150,8 +2148,6 @@ static int upm6910_get_mivr(struct charger_device *chg_dev, u32 *uV)
 static int upm6910_set_icl(struct charger_device *chg_dev, u32 curr)
 {
 	struct upm6910 *upm = dev_get_drvdata(&chg_dev->dev);
-
-	pr_err("indpm curr = %d\n", curr);
 
 	return upm6910_set_input_current_limit(upm, curr / 1000);
 }
@@ -2518,7 +2514,8 @@ static int  upm6910_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 /* S96818AA3 gujiayin.wt,modify,2024/08/21 get vbus start */
 		val->intval = pg_stat;
-		pr_err("%s: charge_online=%d\n", __func__, pg_stat);
+		if (pg_stat)
+			pr_err("%s: charge_online=%d\n", __func__, pg_stat);
 /* S96818AA3 gujiayin.wt,modify,2024/08/21 get vbus end */
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
