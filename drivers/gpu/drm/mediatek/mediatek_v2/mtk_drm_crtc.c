@@ -5517,7 +5517,6 @@ static void _mtk_crtc_lye_addon_module_connect(
 
 		//for exdma
 		if (!addon_module[0]) {
-			DDPMSG("%s addon_module is NULL\n", __func__);
 			return;
 		}
 		addon_config.config_type.module = addon_module[0]->module;
