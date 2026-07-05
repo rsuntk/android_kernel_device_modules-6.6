@@ -28,10 +28,31 @@
 #define ITAG	" [Input Booster] "
 #endif
 
+#ifdef DEBUG
 #define pr_booster(format, ...) { \
 	if (debug_flag) \
 		printk(ITAG format, ## __VA_ARGS__); \
 }
+#else
+
+#define pr_booster(format, ...) no_printk(KERN_INFO format, ##__VA_ARGS__)
+
+#ifdef pr_info
+#undef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+
+#ifdef pr_debug
+#undef pr_debug
+#define pr_debug(fmt, ...) no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
+
+#ifdef pr_warn
+#undef pr_warn
+#define pr_warn(fmt, ...) no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
+
+#endif
 
 #define IB_EVENT_TOUCH_BOOSTER 1
 #define MAX_MULTI_TOUCH_EVENTS		10
