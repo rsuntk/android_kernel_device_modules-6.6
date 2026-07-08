@@ -63,9 +63,9 @@ do {								\
 } while (0)
 #else
 
-#define chr_err(fmt, args...) ((void)0)
-#define chr_info(fmt, args...) ((void)0)
-#define chr_debug(fmt, args...) ((void)0)
+#define chr_err(fmt, args...) no_printk(KERN_INFO fmt, ##args)
+#define chr_info(fmt, args...) no_printk(KERN_INFO fmt, ##args)
+#define chr_debug(fmt, args...) no_printk(KERN_INFO fmt, ##args)
 
 #ifdef pr_info
 #undef pr_info
