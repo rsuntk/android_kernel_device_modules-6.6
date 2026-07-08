@@ -38,6 +38,9 @@
 
 extern int chr_get_debug_level(void);
 
+#define MTK_BATT_DEBUG 0
+
+#if MTK_BATT_DEBUG
 #define chr_err(fmt, args...)					\
 do {								\
 	if (chr_get_debug_level() >= CHRLOG_ERROR_LEVEL) {	\
@@ -58,6 +61,11 @@ do {								\
 		pr_notice(fmt, ##args);				\
 	}							\
 } while (0)
+#else
+#define chr_err(fmt, args...) ((void)0)
+#define chr_info(fmt, args...) ((void)0)
+#define chr_debug(fmt, args...) ((void)0)
+#endif
 
 struct mtk_charger;
 struct charger_data;
