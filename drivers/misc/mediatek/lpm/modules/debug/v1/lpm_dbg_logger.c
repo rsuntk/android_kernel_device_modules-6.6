@@ -24,6 +24,13 @@
 #include <lpm_module.h>
 #include <lpm_dbg_syssram_v1.h>
 
+#ifndef LPM_DBG
+#ifdef pr_info
+#undef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define LPM_LOG_DEFAULT_MS		5000
 
 #define PCM_32K_TICKS_PER_SEC		(32768)

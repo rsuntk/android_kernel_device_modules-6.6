@@ -30,6 +30,13 @@
 #include <lpm_sys_res.h>
 #endif
 
+#ifndef LPM_DBG
+#ifdef pr_info
+#undef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define plat_mmio_read(offset)	__raw_readl(lpm_spm_base + offset)
 
 #define LPM_LOG_DEFAULT_MS		5000

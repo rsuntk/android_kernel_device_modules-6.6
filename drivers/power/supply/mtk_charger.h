@@ -62,9 +62,26 @@ do {								\
 	}							\
 } while (0)
 #else
+
 #define chr_err(fmt, args...) ((void)0)
 #define chr_info(fmt, args...) ((void)0)
 #define chr_debug(fmt, args...) ((void)0)
+
+#ifdef pr_info
+#undef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+
+#ifdef pr_debug
+#undef pr_debug
+#define pr_debug(fmt, ...) no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
+
+#ifdef pr_warn
+#undef pr_warn
+#define pr_warn(fmt, ...) no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
+
 #endif
 
 struct mtk_charger;
