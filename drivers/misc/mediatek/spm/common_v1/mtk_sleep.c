@@ -22,6 +22,13 @@
 #include "mtk_mcdi_api.h"
 
 #include "mtk_lp_dts.h"
+
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 static DEFINE_SPINLOCK(slp_lock);
 
 unsigned long slp_dp_cnt[NR_CPUS] = {0};

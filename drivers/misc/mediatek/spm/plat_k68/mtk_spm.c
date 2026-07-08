@@ -31,6 +31,12 @@
 #include <mtk_idle_fs/mtk_idle_sysfs.h>
 DEFINE_SPINLOCK(__spm_lock);
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 /* Note: implemented in mtk_cpuidle.c */
 int __attribute__ ((weak)) mtk_cpuidle_init(void) { return -EOPNOTSUPP; }
 

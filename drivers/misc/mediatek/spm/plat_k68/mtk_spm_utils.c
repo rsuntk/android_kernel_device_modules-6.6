@@ -15,6 +15,12 @@
 #include "mtk_spm_internal.h"
 #include "mtk_spm_suspend_internal.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 static int local_spm_load_firmware_status = 1;
 int spm_load_firmware_status(void)
 {

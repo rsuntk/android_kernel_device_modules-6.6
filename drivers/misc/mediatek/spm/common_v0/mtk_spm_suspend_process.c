@@ -26,6 +26,12 @@
 #define WORLD_CLK_CNTCV_L        (0x10017008)
 #define WORLD_CLK_CNTCV_H        (0x1001700C)
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 void spm_dump_world_clk_cntcv(void)
 {
 	u32 wlk_cntcv_l = 0;

@@ -22,6 +22,12 @@
 
 #include "mtk_idle_module.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 /* [ByChip] Internal weak functions: implemented in mtk_spm.c */
 int __attribute__((weak)) spm_load_firmware_status(void) { return -1; }
 /* [ByChip] Internal weak functions: implemented in mtk_idle_cond_check.c */

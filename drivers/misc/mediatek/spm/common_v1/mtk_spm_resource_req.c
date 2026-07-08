@@ -14,6 +14,12 @@
 #include "mtk_idle_fs/mtk_idle_sysfs.h"
 #include "mtk_lp_dts.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define NF_SPM_USER_USAGE_STRUCT	2
 
 DEFINE_SPINLOCK(spm_resource_desc_update_lock);

@@ -41,6 +41,12 @@
 #include "mtk_sleep_internal.h"
 #include "mtk_idle_module.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 static int spm_dormant_sta;
 int spm_ap_mdsrc_req_cnt;
 

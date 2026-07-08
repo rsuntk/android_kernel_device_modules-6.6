@@ -26,6 +26,12 @@
 #include "mtk_idle_profile.h"
 #include "mtk_idle_module.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 /* [ByChip] Internal weak function: implemented in mtk_idle_cond_check.c */
 int __attribute__((weak)) mtk_idle_cond_append_info(
 	bool short_log, unsigned int idle_type, char *logptr, unsigned int logsize);

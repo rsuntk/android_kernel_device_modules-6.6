@@ -24,7 +24,7 @@
 #include <lpm_module.h>
 #include <lpm_dbg_syssram_v1.h>
 
-#ifndef LPM_DBG
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
 #ifdef pr_info
 #undef pr_info
 #define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)

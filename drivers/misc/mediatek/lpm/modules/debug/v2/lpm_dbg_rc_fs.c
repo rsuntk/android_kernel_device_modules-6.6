@@ -21,6 +21,12 @@
 #include <mtk_lp_sysfs.h>
 #include <lpm_timer.h>
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 /* these definitions must be the same as TF-A common code */
 #define SPM_COND_BLOCKED_CG_IDX		(0)
 #define SPM_COND_BLOCKED_PLL_IDX	(16)

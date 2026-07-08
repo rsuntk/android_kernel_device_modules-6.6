@@ -28,6 +28,11 @@
 		(x) = ((t.tv_sec & 0xFFF) * 1000000 + t.tv_usec);\
 	} while (0)
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
 
 /* idle ratio */
 static bool idle_ratio_en;

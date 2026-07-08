@@ -35,6 +35,11 @@
 #include "power_gs_v1/mtk_power_gs_internal.h"
 #endif
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
 
 /********************************************************************
  * dp/so3/so pcm_flags and pcm_flags1

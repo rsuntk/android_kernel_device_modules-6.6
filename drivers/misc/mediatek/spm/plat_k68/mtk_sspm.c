@@ -14,6 +14,11 @@
 #include "mtk_sspm.h"
 #include "mtk_spm_internal.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
 
 #define SPM_D_LEN   (8) /* # of cmd + arg0 + arg1 + ... */
 

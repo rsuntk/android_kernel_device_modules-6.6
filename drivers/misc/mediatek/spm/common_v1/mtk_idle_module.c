@@ -18,6 +18,12 @@
 #include <linux/hardirq.h>
 #include <linux/irqflags.h>
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 DEFINE_MUTEX(mtk_idle_module_locker);
 atomic_t mtk_idle_module_atomic = ATOMIC_INIT(0);
 

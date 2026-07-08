@@ -18,6 +18,12 @@
 #define mtk_timer_src_count(...)    arch_counter_get_cntvct(__VA_ARGS__)
 #define SPM_D_LEN   (8) /* # of cmd + arg0 + arg1 + ... */
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;

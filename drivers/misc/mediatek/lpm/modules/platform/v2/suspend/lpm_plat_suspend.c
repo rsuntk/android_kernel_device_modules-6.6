@@ -38,6 +38,12 @@
 #include "lpm_plat_comm.h"
 #include "lpm_plat_suspend.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 unsigned int lpm_suspend_status;
 struct cpumask s2idle_cpumask;
 static struct pm_qos_request lpm_qos_request;

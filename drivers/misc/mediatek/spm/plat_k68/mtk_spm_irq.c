@@ -23,6 +23,12 @@
 #include "mtk_spm_irq.h"
 #include "mtk_spm_internal.h"
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define EDGE_TRIG_IRQ_NUM 3
 
 enum MTK_SPM_CIRQ_SMC_CALL {

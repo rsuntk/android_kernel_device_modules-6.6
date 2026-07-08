@@ -32,6 +32,11 @@
 #include <mtk_power_gs_internal.h>
 #endif
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
 
 /* FIXME: IT with vcorefs ? */
 void __attribute__((weak)) dvfsrc_md_scenario_update(bool suspend) {}

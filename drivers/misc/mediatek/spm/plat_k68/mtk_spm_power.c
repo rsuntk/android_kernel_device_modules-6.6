@@ -17,6 +17,13 @@
 #include "mtk_sspm.h"
 
 #include <mtk_idle_module_plat.h>
+
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 void mtk_idle_power_pre_process(int idle_type, unsigned int op_cond)
 {
 #ifdef USE_TINYSYS_SSPM_FOR_SPM

@@ -46,6 +46,12 @@
 #include <linux/irqchip/mtk-gic-extend.h>
 #endif /* CONFIG_MTK_GIC_V3_EXT */
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 static int spm_dormant_sta;
 int spm_ap_mdsrc_req_cnt;
 

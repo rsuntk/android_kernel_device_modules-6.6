@@ -8,6 +8,9 @@ config DEVICE_MODULES_ALLOW_BUILTIN
 	  into the kernel image.
 	  If unsure, say N.
 
+config MTK_DRIVER_LOGGER
+	bool "Enable logger for debug"
+
 source "$(KCONFIG_EXT_PREFIX)drivers/mm/Kconfig"
 
 source "$(KCONFIG_EXT_PREFIX)drivers/block/zram/Kconfig"

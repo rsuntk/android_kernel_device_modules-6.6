@@ -27,6 +27,12 @@
 #define WORLD_CLK_CNTCV_L	(0x10017008)
 #define WORLD_CLK_CNTCV_H	(0x1001700C)
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef printk_deferred
+#define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #if IS_ENABLED(CONFIG_FPGA_EARLY_PORTING)
 __attribute__ ((weak))
 unsigned int pmic_read_interface_nolock(unsigned int RegNum, unsigned int *val,

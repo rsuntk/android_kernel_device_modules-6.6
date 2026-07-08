@@ -21,6 +21,12 @@
 #include <mtk_lp_sysfs.h>
 #include <lpm_timer.h>
 
+#if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
+#ifdef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define SPM_RC_UPDATE_COND_ID_MASK	0xffff
 #define SPM_RC_UPDATE_COND_RC_ID_MASK	0xffff
 #define SPM_RC_UPDATE_COND_RC_ID_SHIFT	(16)
