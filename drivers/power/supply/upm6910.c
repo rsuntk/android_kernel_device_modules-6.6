@@ -540,7 +540,6 @@ static int upm6910_get_vbus(struct charger_device *chg_dev,  u32 *vbus)
 		val = 0;
 	}
 	*vbus = val * 1000;
-	pr_err(" upm_get_vbus :%d \n", val);
 
 	return val;
 }
@@ -683,7 +682,6 @@ static int upm6910_set_recharge(struct charger_device *chg_dev, u32 volt)
 {
 	struct upm6910 *upm = dev_get_drvdata(&chg_dev->dev);
 
-	pr_err("recharge = %d\n", volt);
 	return upm6910_set_rechargeth(upm, volt / 1000);
 }
 
@@ -809,7 +807,6 @@ static int sgm41513d_enable_power_path(struct charger_device *chg_dev, bool en)
 		mivr = 	old_mivr;
 	}
 
-	pr_info("old_mivr=%d,mivr=%d,en=%d\n",old_mivr,mivr,en);
 	ret = upm6910_set_ivl(chg_dev,mivr);
 	if (ret) {
 		dev_err(upm->dev, "%s:power path set failed\n", __func__);
@@ -2074,7 +2071,6 @@ static int upm6910_is_charging_done(struct charger_device *chg_dev, bool *done)
 		val = val >> REG08_CHRG_STAT_SHIFT;
 		*done = (val == REG08_CHRG_STAT_CHGDONE);
 	}
-	dev_info(upm->dev, "[%s] Can't should run!!!\n", __func__);
 
 	return ret;
 }
@@ -2124,7 +2120,6 @@ static int upm6910_set_ivl(struct charger_device *chg_dev, u32 volt)
 {
 	struct upm6910 *upm = dev_get_drvdata(&chg_dev->dev);
 
-	pr_err("vindpm volt = %d\n", volt);
 	upm->old_mivr = volt;
 	if (upm->part_no == SGM41513D) {
 		if ((upm->hiz_state == SGM_ENTER_HIZ)&&(volt != SGM415xx_VINDPM_MAX))
@@ -2141,7 +2136,7 @@ static int upm6910_get_mivr(struct charger_device *chg_dev, u32 *uV)
 	if (upm->old_mivr > 0) {
 		*uV = upm->old_mivr;
 	}
-	pr_err("old_mivr = %d\n", upm->old_mivr);
+
 	return 0;
 }
 
@@ -2514,8 +2509,6 @@ static int  upm6910_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ONLINE:
 /* S96818AA3 gujiayin.wt,modify,2024/08/21 get vbus start */
 		val->intval = pg_stat;
-		if (pg_stat)
-			pr_err("%s: charge_online=%d\n", __func__, pg_stat);
 /* S96818AA3 gujiayin.wt,modify,2024/08/21 get vbus end */
 		break;
 	case POWER_SUPPLY_PROP_TYPE:
@@ -2534,7 +2527,7 @@ static int  upm6910_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_STATUS:
 		ret = upm6910_get_charging_status(upm);
 		pr_err("original val=%d\n", ret);
-		if(ret >= 0) {
+		if (ret >= 0) {
 			switch (ret) {
 				case CHRG_STAT_NOT_CHARGING:
 					if (!pg_stat)
@@ -2607,7 +2600,6 @@ static int  upm6910_charger_set_property(struct power_supply *psy,
 		} else {
 			upm->is_need_bc12 = !!val->intval;
 		}
-		pr_err("is_need_bc12 =%d, is_need_retry_bc12 =%d\n", upm->is_need_bc12, upm->is_need_retry_bc12);
 		break;
 	case POWER_SUPPLY_PROP_INPUT_VOLTAGE_LIMIT:
 		upm6910_set_otg(upm->chg_dev, false);
