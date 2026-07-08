@@ -2207,19 +2207,16 @@ static int get_time_to_charge_full(struct battery_data *data)
 		return -1;
 	}
 
-	if (bm == NULL)
+	if (!bm)
 		bm = get_mtk_battery_manager();
 
-	if (bm == NULL) {
+	if (!bm) {
 		pr_err("[%s]bm is not rdy\n", __func__);
 		return -1;
 	}
 
 	fgcurrent = wt_get_current_now(bm);
 	//pinfo->ta_type= adapter_dev_get_property(pinfo->select_adapter, CAP_TYPE);
-
-	pr_err("%s: capacity=%d, fgcurrent=%d,bat_cycle=%d,status=%d\n",
-		__func__, capacity, fgcurrent, wt_get_batt_cycle_cnt(bm), data->bat_status);
 
 	wt_calculate_time_state = wt_check_calculate_time_state(data, pinfo,
 								fgcurrent);
@@ -2236,7 +2233,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		wt_calculate_time_state = CALCULATE_INVALID_STATE;
 	}
 
-	pr_err("%s: is_need_recheck_afc=%d\n", __func__, is_need_recheck_afc);
 	if (is_need_recheck_afc
 		&& ((wt_calculate_time_state == CALCULATE_INIT_STATE)
 		|| (wt_calculate_time_state == CALCULATE_CHARGING_STATE))) {
@@ -2252,8 +2248,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		} else if (wt_recheck_afc == 0) {
 			is_need_recheck_afc = false;
 		}
-		pr_err("%s: recheck afc: wt_calculate_time_state=%d\n",
-			__func__, wt_calculate_time_state);
 	}
 
 #if defined (ONEUI_6P1_CHG_PROTECION_ENABLE)
@@ -2262,8 +2256,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		if (wt_check_protection_calculate_time_state(pinfo) > 0) {
 			wt_calculate_time_state = CALCULATE_INIT_STATE;
 		}
-		pr_err("%s: check protection: wt_calculate_time_state=%d\n",
-			__func__, wt_calculate_time_state);
 	}
 #endif
 
@@ -2272,8 +2264,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		if (wt_check_hv_disable_calculate_time_state(pinfo) > 0) {
 			wt_calculate_time_state = CALCULATE_INIT_STATE;
 		}
-		pr_err("%s: check hv_disable: wt_calculate_time_state=%d\n",
-			__func__, wt_calculate_time_state);
 	}
 
 	switch (wt_calculate_time_state) {
@@ -2325,7 +2315,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 	}
 
 	fgcurrent = calculate_avg_current(fgcurrent);
-	pr_err("%s: avg_current=%d\n", __func__, fgcurrent);
 
 	if (is_initial_flag) {
 		pre_charge_plug_time = fulltime_get_sys_time();
@@ -2351,9 +2340,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 	} else if ((pre_magic_current != magic_current) || (pre_remain_mah != remain_mah)) {
 		magic_current_changflg = true;
 	}
-	pr_err("%s:magic_current=%d,%d,%d,chr_type=%d,real_time=%d,%d,%d,pd_type=%d\n", __func__,
-		pre_magic_current, magic_current, magic_current_changflg, pinfo->chr_type,
-		real_time, pre_real_time, pre_charge_plug_time, pinfo->ta_type);
 
 	pre_magic_current = magic_current;
 	if (magic_current != 0) {
@@ -2373,7 +2359,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 	}
 	pre_remain_mah = remain_mah;
 
-	pr_err("%s: is_initial_flag=%d,wt_initial_time_interval=%d\n", __func__, is_initial_flag, wt_initial_time_interval);
 	if (is_initial_flag && (wt_initial_time_interval < UPDATE_TO_FULL_INTERVAL_S)
 		&& (magic_current != 0)) {
 		initial_time_to_full = remain_mah * 3600 / magic_current;
@@ -2406,7 +2391,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		wt_time_interval = wt_time_now - wt_time_old;
 	} else {
 		wt_time_interval = -1;
-		pr_err("%s: Invalid. The time reduces\n", __func__);
 	}
 
 	//old_ui_raw_time_diff = raw_time_to_full - old_ui_time_to_full;
@@ -2421,9 +2405,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		ui_raw_time_diff = ui_time_to_full - raw_time_to_full;
 		wt_compensation_state = COMPENSATION_LEVEL_REDUCE_QUICK;
 	}
-
-	pr_err("%s: ui_time=%d, raw_time=%d, compensation_state=%d\n",
-		__func__, ui_time_to_full, raw_time_to_full, wt_compensation_state);
 
 	switch (wt_compensation_state) {
 		case COMPENSATION_LEVEL_REDUCE_NORMAL:
@@ -2514,10 +2495,6 @@ static int get_time_to_charge_full(struct battery_data *data)
 		is_time_need_update = false;
 	}
 
-	pr_err("%s: time_interval=%d, time_th=%d, wt_time_offset=%d, is_update=%d\n",
-		__func__, wt_time_interval, time_to_full_update_th,
-		wt_time_to_full_offset, is_time_need_update);
-
 	if (is_time_need_update) {
 		if (ui_time_to_full >= (wt_time_to_full_offset + WT_INTERMAL_TIME_NORMAL)) {
 			ui_time_to_full = ui_time_to_full - wt_time_to_full_offset;
@@ -2536,16 +2513,12 @@ static int get_time_to_charge_full(struct battery_data *data)
 
 	//old_raw_time_to_full = raw_time_to_full;
 
-	pr_err("%s: ui_time=%d, old_ui_time=%d\n",
-		__func__, ui_time_to_full, old_ui_time_to_full);
-
 	//wt_time_interval < 0, using old method when get time error. This situation should not occur, under normal circumstances
 	if (wt_time_interval >= 0) {
 		if (ui_time_to_full <= old_ui_time_to_full) {
 			time_to_charge_full = ui_time_to_full;
 			old_ui_time_to_full = ui_time_to_full;
 		} else {
-			pr_err("%s: Invalid. The remaining duration increases\n", __func__);
 			//time_to_charge_full = old_ui_time_to_full;
 		}
 	} else {
