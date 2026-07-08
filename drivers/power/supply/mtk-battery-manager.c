@@ -2788,7 +2788,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 #if defined (CONFIG_N28_CHARGER_PRIVATE) || defined (CONFIG_W2_CHARGER_PRIVATE)
 		time_to_full = get_time_to_charge_full(bs_data);
 
-		pr_err("time_to_full: %d\n", time_to_full);
 		val->intval = time_to_full;
 #else
 		/* full or unknown must return 0 */
@@ -2866,8 +2865,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		ret = -EINVAL;
 		break;
 		}
-
-	pr_err("%s psp:%d ret:%d val:%d", __func__, psp, ret, val->intval);
 
 	return ret;
 }
