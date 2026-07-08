@@ -100,10 +100,6 @@ extern void mt_irq_dump_status(unsigned int irq);
 
 #define RGU_GET_S2IDLE	0x12
 
-#if IS_ENABLED(CONFIG_SMP)
-static char tmr_buf[MAX_CPUNR][WK_MAX_MSG_SIZE];
-#endif
-
 static int start_kicker(void);
 static int kwdt_thread(void *arg);
 static int g_kicker_init;
@@ -495,11 +491,7 @@ static void kwdt_time_sync(void)
 	rtc_time64_to_tm(tv.tv_sec, &tm);
 	tv_android.tv_sec -= (uint64_t)sys_tz.tz_minuteswest * 60;
 	rtc_time64_to_tm(tv_android.tv_sec, &tm_android);
-#if !IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE)
-	pr_info("[thread:%d] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
-#else
 	pr_debug("[thread:%d] %d-%02d-%02d %02d:%02d:%02d.%u UTC;"
-#endif
 		"android time %d-%02d-%02d %02d:%02d:%02d.%03d\n",
 		current->pid, tm.tm_year + 1900, tm.tm_mon + 1,
 		tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec,
@@ -768,132 +760,6 @@ static void show_irq_count(void)
 	aee_sram_fiq_log("\n");
 }
 
-#if IS_ENABLED(CONFIG_SMP)
-static struct __call_single_data wdt_csd[MAX_CPUNR];
-#endif
-static void kwdt_dump_func(void)
-{
-	struct task_struct *g, *t;
-	int i = 0;
-
-#if IS_ENABLED(CONFIG_SMP)
-#if !IS_ENABLED(CONFIG_ARM64)
-	for (i = 0; i < CPU_NR; i++)
-		pr_info("%s", tmr_buf[i]);
-#else
-	unsigned int unkick_mask =
-		(get_kick_bit() ^ get_check_bit()) & get_check_bit();
-
-	pr_info("unkick_mask %x\n", unkick_mask);
-
-	for (i = 0; i < CPU_NR; i++) {
-		pr_info("%s\n", tmr_buf[i]);
-		if (unkick_mask & (1 << i)) {
-			wdt_csd[i].info = tmr_buf;
-			smp_call_function_single_async(i, &wdt_csd[i]);
-			wdt_csd[i].info = NULL;
-		}
-	}
-#endif
-#endif
-
-	for_each_process_thread(g, t) {
-		if (!strcmp(t->comm, "watchdogd")) {
-			pr_info("watchdogd on CPU %d\n", task_thread_info(t)->cpu);
-			sched_show_task(t);
-			break;
-		}
-	}
-#if !IS_ENABLED(CONFIG_ARM64)
-	for_each_process_thread(g, t) {
-		if (!strncmp(t->comm, "wdtk-", 5)) {
-			pr_info("%s on CPU %d\n", t->comm, task_thread_info(t)->cpu);
-			sched_show_task(t);
-			break;
-		}
-	}
-#else
-	for_each_process_thread(g, t) {
-		if (!strncmp(t->comm, "wdtk-", 5)) {
-			int cpu = task_thread_info(t)->cpu;
-
-			pr_info("%s on CPU %d\n", t->comm, cpu);
-			sched_show_task(t);
-
-			if (unkick_mask & (1 << cpu)) {
-				struct slp_history *slp = &wk_sl[cpu];
-
-				/*
-				 * enable/disable kprobe cannot be added in
-				 * here because preemption is disabled and
-				 * the two functions might be sleep
-				 */
-
-				if (IS_ERR_OR_NULL(slp) ||
-					IS_ERR_OR_NULL(slp->timer)) {
-					pr_info("slp is null %d %lld %llx %llx\n",
-						slp->cpu, slp->sc,
-						(unsigned long long)slp,
-						(unsigned long long)slp->timer);
-				} else {
-					struct hrtimer *wdt_timer = slp->timer;
-
-					if (IS_ERR_OR_NULL(wdt_timer) ||
-						IS_ERR_OR_NULL(wdt_timer->base) ||
-						IS_ERR_OR_NULL(wdt_timer->base->cpu_base))
-						pr_info("wdt sleeper is invalid\n");
-					else
-						pr_info("%d %lld timer on cpu %d softexpires %lld\n",
-						slp->cpu, slp->sc,
-						IS_ERR_OR_NULL(wdt_timer) ? 100 :
-						 wdt_timer->base->cpu_base->cpu,
-						IS_ERR_OR_NULL(wdt_timer) ? 100 :
-						 wdt_timer->_softexpires);
-				}
-
-			}
-			break;
-		}
-	}
-
-	if(IS_ERR_OR_NULL(bc_mtk_clkevt))
-		pr_info("mtk-clkevt is invalid\n");
-	else
-		pr_info("%s irq %d cpumask %*pbl next_event %lld\n",
-			bc_mtk_clkevt->name, bc_mtk_clkevt->irq,
-			cpumask_pr_args(bc_mtk_clkevt->cpumask),
-			bc_mtk_clkevt->next_event);
-#endif
-	for (i = 0; i < CPU_NR; i++) {
-		struct rq *rq;
-
-		pr_info("task on CPU%d\n", i);
-		rq = cpu_rq(i);
-		if (cpu_rq(i))
-			sched_show_task(rq->curr);
-	}
-
-	dump_wdk_bind_info(true);
-
-#if IS_ENABLED(CONFIG_MTK_IRQ_MONITOR)
-	if (p_mt_aee_dump_irq_info)
-		p_mt_aee_dump_irq_info();
-#endif
-	show_irq_count();
-#if CHK_HWT_IRQ
-	save_irq_info();
-#endif
-	sysrq_sched_debug_show_at_AEE();
-	save_timer_list_info();
-
-	if (toprgu_base)
-		iowrite32(WDT_RST_RELOAD, toprgu_base + WDT_RST);
-	/* trigger HWT */
-	crash_setup_regs(&saved_regs, NULL);
-	if (apwdt_en)
-		mrdump_common_die(AEE_REBOOT_MODE_WDT, "HWT", &saved_regs);
-}
-
 static void aee_dump_timer_func(struct timer_list *t)
 {
 	spin_lock(&lock);
@@ -936,7 +802,6 @@ static void aee_dump_timer_func(struct timer_list *t)
 		}
 	} else {
 		spin_unlock(&lock);
-		kwdt_dump_func();
 	}
 }
 
@@ -950,56 +815,6 @@ static u32 arch_timer_reg_read_tval(void)
 }
 #endif
 
-static void wdt_dump_cntcv(void *arg)
-{
-	int ret = -1;
-	uint64_t cnt = 0;
-	uint32_t low = 0;
-
-	if (systimer_base) {
-		low = readl(systimer_base + SYSTIMER_CNTCV_L);
-		cnt = readl(systimer_base + SYSTIMER_CNTCV_H);
-		cnt = cnt << 32 | low;
-	}
-
-	if (arg)
-		pr_info("sc:%lld\n", sched_clock());
-	else {
-#if IS_ENABLED(CONFIG_ARM64)
-		ret = snprintf(tmr_buf[smp_processor_id()], WK_MAX_MSG_SIZE,
-			"CPU:%d CNTCV_CTL:%llx CNTCV_TVAL:%llx CNTVCT:%llx SYST_CNTCR:%x SYST_DISTL:%x SYST_CNTCV:%llx sc:%lld\n",
-			smp_processor_id(),
-			read_sysreg(cntv_ctl_el0),
-			read_sysreg(cntv_tval_el0),
-			read_sysreg(cntvct_el0),
-			systimer_base ? ioread32(systimer_base + SYST_CNTCR) : 0,
-			systimer_base ? ioread32(systimer_base + SYST_DISTL) : 0,
-			systimer_base ? cnt : 0,
-			sched_clock());
-#else
-	ret = snprintf(tmr_buf[smp_processor_id()], WK_MAX_MSG_SIZE,
-		"%s CPU:%d CNTCV_CTL:%x CNTCV_TVAL:%x CNTVCT:%llx SYST_CNTCR:%x SYST_DISTL:%x SYST_CNTCV:%llx sc:%lld\n",
-		__func__,
-		smp_processor_id(),
-		arch_timer_reg_read_cp15(ARCH_TIMER_VIRT_ACCESS, ARCH_TIMER_REG_CTRL),
-		arch_timer_reg_read_tval(),
-		__arch_counter_get_cntvct(),
-		systimer_base ? ioread32(systimer_base + SYST_CNTCR) : 0,
-		systimer_base ? ioread32(systimer_base + SYST_DISTL) : 0,
-		systimer_base ? cnt : 0,
-		sched_clock());
-#endif
-	}
-
-	if (ret < 0) {
-		tmr_buf[smp_processor_id()][0] = 'E';
-		tmr_buf[smp_processor_id()][1] = 'R';
-		tmr_buf[smp_processor_id()][2] = 'R';
-		tmr_buf[smp_processor_id()][3] = '\0';
-	}
-}
-#endif
-
 static void kwdt_process_kick(int local_bit, int cpu,
 				unsigned long curInterval, char msg_buf[],
 				unsigned int original_kicker)
@@ -1008,12 +823,6 @@ static void kwdt_process_kick(int local_bit, int cpu,
 	int i = 0, ret = -1;
 	bool rgu_fiq = false;
 	unsigned long s_s2idle = get_s2idle_state();
-#if !IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE)
-	char smp_histroy[60] = {'\0'};
-#if IS_ENABLED(CONFIG_SMP)
-	static int j;
-#endif
-#endif
 
 	if (toprgu_base && (ioread32(toprgu_base + WDT_MODE) & WDT_MODE_EN))
 		r_counter = ioread32(toprgu_base + WDT_COUNTER) / (32 * 1024);
@@ -1031,7 +840,6 @@ static void kwdt_process_kick(int local_bit, int cpu,
 
 			if (ret >= 0)
 				pr_info("%s", msg_buf);
-			kwdt_dump_func();
 			return;
 		}
 
@@ -1068,44 +876,9 @@ static void kwdt_process_kick(int local_bit, int cpu,
 		g_hang_detected = 1;
 		dump_timeout = 2;
 	}
-#if IS_ENABLED(CONFIG_SMP) && (!IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE))
-	if ((((~(local_bit - 1)) & local_bit) == local_bit) && j++ > 3) {
-		int cpu = 0;
-		int smp_ret[MAX_CPUNR] = {255};
-
-		for (cpu = 0; cpu < CPU_NR; cpu++) {
-			smp_ret[cpu] = 255;
-			if (get_check_bit() & (1 << cpu))
-				smp_ret[cpu] = smp_call_function_single_async(cpu, &wdt_csd[cpu]);
-		}
-
-		ret = snprintf(smp_histroy, 60, "s_cpu %d - %d %d %d %d %d %d %d %d\n",
-			smp_processor_id(), smp_ret[0], smp_ret[1], smp_ret[2], smp_ret[3],
-			 smp_ret[4], smp_ret[5], smp_ret[6], smp_ret[7]);
-	}
-#endif
 
 	wk_tsk_kick_time[cpu] = sched_clock();
-#if !IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE)
-#if !IS_ENABLED(CONFIG_ARM64)
-	ret = snprintf(msg_buf, WK_MAX_MSG_SIZE,
-	 "[wdk-c] cpu=%d o_k=%d lbit=0x%x cbit=0x%x,%x,%d,%d,%lld,%x,%llu,%llu,%llu,%llu,[%lld,%ld] %d %lx\n",
-	 cpu, original_kicker, local_bit, get_check_bit(),
-	 (local_bit ^ get_check_bit()) & get_check_bit(), lasthpg_cpu,
-	 lasthpg_act, lasthpg_t, atomic_read(&plug_mask), div_u64(lastsuspend_t, 1000000),
-	 div_u64(lastsuspend_syst, 1000000), div_u64(lastresume_t, 1000000),
-	 div_u64(lastresume_syst, 1000000), wk_tsk_kick_time[cpu], curInterval, r_counter, s_s2idle);
-#else
-	ret = snprintf(msg_buf, WK_MAX_MSG_SIZE,
-	 "[wdk-c] cpu=%d o_k=%d lbit=0x%x cbit=0x%x,%x,%d,%d,%lld,%x,%llu,%llu,%llu,%llu,[%lld,%ld] %d %lx %s\n",
-	 cpu, original_kicker, local_bit, get_check_bit(),
-	 (local_bit ^ get_check_bit()) & get_check_bit(), lasthpg_cpu,
-	 lasthpg_act, lasthpg_t, atomic_read(&plug_mask), div_u64(lastsuspend_t, 1000000),
-	 div_u64(lastsuspend_syst, 1000000), div_u64(lastresume_t, 1000000),
-	 div_u64(lastresume_syst, 1000000), wk_tsk_kick_time[cpu], curInterval, r_counter, s_s2idle,
-	 (ret >= 0) ? smp_histroy : " ");
-#endif
-#endif
+
 	if ((local_bit & (get_check_bit() & s_s2idle)) == (get_check_bit() & s_s2idle)) {
 		all_k_timer_t = sched_clock();
 		if (timer_pending(&aee_dump_timer))
@@ -1119,11 +892,6 @@ static void kwdt_process_kick(int local_bit, int cpu,
 		dump_timeout = 0;
 		local_bit = 0;
 		kwdt_time_sync();
-#if !IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE)
-#if CHK_HWT_IRQ
-		save_irq_info();
-#endif
-#endif
 		if (toprgu_base)
 			iowrite32(WDT_RST_RELOAD, toprgu_base + WDT_RST);
 	}
@@ -1151,15 +919,6 @@ static void kwdt_process_kick(int local_bit, int cpu,
 	}
 
 	spin_unlock_bh(&lock);
-
-#if !IS_ENABLED(CONFIG_MTK_AEE_HANGDET_IMPROVE_PERFORMANCE)
-	if (ret >= 0)
-		pr_info("%s", msg_buf);
-
-#if IS_ENABLED(CONFIG_SMP)
-	pr_info("%s", tmr_buf[cpu]);
-#endif
-#endif
 
 	if (dump_timeout) {
 #if IS_ENABLED(CONFIG_MTK_TICK_BROADCAST_DEBUG)
@@ -1734,13 +1493,6 @@ static int __init hangdet_init(void)
 	}
 
 	timer_setup(&aee_dump_timer, aee_dump_timer_func, 0);
-
-#if IS_ENABLED(CONFIG_SMP)
-	for (res = 0; res < 8; res++) {
-		wdt_csd[res].func = wdt_dump_cntcv;
-		wdt_csd[res].info = NULL;
-	}
-#endif
 
 #if IS_ENABLED(CONFIG_ARM64)
 	res = register_kprobe(&kp_hrtimer_start_range_ns);
