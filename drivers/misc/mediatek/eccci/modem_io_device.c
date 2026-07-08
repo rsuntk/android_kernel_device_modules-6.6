@@ -42,12 +42,7 @@ static struct file_operations *ccci_port_ops;
 
 void print_ipc_pkt(u16 ch, struct sk_buff *skb)
 {
-	if (ch == CCCI_RIL_IPC0_RX || ch == CCCI_RIL_IPC1_RX)
-		print_hex_dump(KERN_INFO, "mif: RX: ",
-				DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-	else if (ch == CCCI_RIL_IPC0_TX || ch == CCCI_RIL_IPC1_TX)
-		print_hex_dump(KERN_INFO, "mif: TX: ",
-				DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
+	/* do nothing */
 }
 
 static int misc_open(struct inode *inode, struct file *file)
@@ -56,7 +51,7 @@ static int misc_open(struct inode *inode, struct file *file)
 	int minor = iod->minor;
 	struct port_t *port;
 
-	pr_err("mif: open: %s, minor=%d\n",
+	pr_debug("mif: open: %s, minor=%d\n",
 		file->f_path.dentry->d_iname, minor);
 
 	port = port_get_by_minor(minor);
@@ -69,7 +64,7 @@ static int misc_open(struct inode *inode, struct file *file)
 		return -EBUSY;
 	}*/
 
-	pr_err("mif: open: %s\n", port->name);
+	pr_debug("mif: open: %s\n", port->name);
 
 	atomic_inc(&port->usage_cnt);
 	file->private_data = port;
@@ -84,7 +79,7 @@ static int misc_release(struct inode *inode, struct file *filp)
 	if (!ccci_port_ops)
 		return 0;
 
-	pr_err("mif: release: %s(%s)\n",
+	pr_debug("mif: release: %s(%s)\n",
 		filp->f_path.dentry->d_iname, current->comm);
 
 	return ccci_port_ops->release(inode, filp);
@@ -132,7 +127,6 @@ static unsigned int misc_poll(struct file *filp, struct poll_table_struct *wait)
 			port->md_state_changed = 0;
 			mask |= POLLHUP;
 		}
-		mif_err("%s: state == %d\n", "ipc", md_state);
 		break;
 
 	default:
@@ -173,7 +167,7 @@ static long misc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return ccci_port_ops->unlocked_ioctl(filp, CCCI_IOC_GET_MD_STATE, arg);
 
 	case IOCTL_MODEM_FORCE_CRASH_EXIT:
-		pr_err("mif: %s: cmd=0x%x\n", __func__, cmd);
+		pr_debug("mif: %s: cmd=0x%x\n", __func__, cmd);
 		return ccci_port_ops->unlocked_ioctl(filp, CCCI_IOC_FORCE_MD_ASSERT, arg);
 
 	case IOCTL_MODEM_RESET:
@@ -182,12 +176,12 @@ static long misc_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			return 0;
 		}
 
-		pr_err("mif: %s: cmd=0x%x\n", __func__, cmd);
+		pr_debug("mif: %s: cmd=0x%x\n", __func__, cmd);
 		return ccci_port_ops->unlocked_ioctl(filp, CCCI_IOC_MD_RESET, arg);
 
 	case CCCI_IOC_ENTER_DEEP_FLIGHT_ENHANCED:
 	case CCCI_IOC_LEAVE_DEEP_FLIGHT_ENHANCED:
-		pr_err("mif: %s: cmd=0x%x\n", __func__, cmd);
+		pr_debug("mif: %s: cmd=0x%x\n", __func__, cmd);
 		return ccci_port_ops->unlocked_ioctl(filp, cmd, arg);
 
 #if 0 // todo

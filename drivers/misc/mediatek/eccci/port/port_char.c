@@ -107,7 +107,7 @@ static void port_char_md_state_notify(struct port_t *port, unsigned int state)
 			|| state == EXCEPTION)) {
 		wake_up_all(&port->rx_wq);
 		port->md_state_changed = 1;
-		pr_err("mif: %s port: %d state: %d\n",
+		pr_debug("mif: %s port: %d state: %d\n",
 			__func__, port->rx_ch, state);
 	}
 #endif

@@ -548,13 +548,6 @@ static int ccif_rx_collect(struct md_ccif_queue *queue, int budget,
 		}
 		ccci_h = (struct ccci_header *)skb->data;
 
-#ifdef CONFIG_MTK_SRIL_SUPPORT
-		if (ccci_h->channel == CCCI_RIL_IPC0_RX
-			|| ccci_h->channel == CCCI_RIL_IPC1_RX) {
-			print_hex_dump(KERN_INFO, "1. mif: RX: ",
-					DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-		}
-#endif
 		if (test_and_clear_bit(queue->index, &ccif_ctrl->wakeup_ch)) {
 			CCCI_NOTICE_LOG(0, TAG, "CCIF_MD wakeup source:(%d/%d/%x)(%u) %s\n",
 				queue->index, ccci_h->channel,
@@ -1035,13 +1028,7 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 			CCCI_ERROR_LOG(0, TAG,
 				"TX:ERR rbf write: ret(%d)!=req(%d)\n",
 				ret, skb->len);
-#ifdef CONFIG_MTK_SRIL_SUPPORT
-		if (ccci_h->channel == CCCI_RIL_IPC0_TX
-			|| ccci_h->channel == CCCI_RIL_IPC1_TX) {
-			print_hex_dump(KERN_INFO, "1. mif: TX: ",
-					DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-		}
-#endif
+
 		ccci_md_add_log_history(&ccif_ctrl->traffic_info, OUT,
 			(int)queue->index, ccci_h, 0);
 		/* free request */
@@ -1051,13 +1038,6 @@ static int md_ccif_op_send_skb(unsigned char hif_id, int qno,
 		md_ccif_send(hif_id, queue->ccif_ch);
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
 	} else {
-#ifdef CONFIG_MTK_SRIL_SUPPORT
-		if (ccci_h->channel == CCCI_RIL_IPC0_TX
-			|| ccci_h->channel == CCCI_RIL_IPC1_TX) {
-			print_hex_dump(KERN_INFO, "2. mif: TX: ",
-					DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-		}
-#endif
 		spin_unlock_irqrestore(&queue->tx_lock, flags);
 
 		if (blocking) {

@@ -456,12 +456,6 @@ READ_START:
 	}
 	ts_1 = local_clock();
 
-#ifdef CONFIG_MTK_SRIL_SUPPORT
-	if (port->rx_ch == CCCI_RIL_IPC0_RX || port->rx_ch == CCCI_RIL_IPC1_RX) {
-		print_hex_dump(KERN_INFO, "3. mif: RX: ",
-				DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-	}
-#endif
 	skb_pull(skb, read_len);
 	/* 4. free request */
 	if (full_req_done)
@@ -1035,13 +1029,6 @@ int port_recv_skb(struct port_t *port, struct sk_buff *skb)
 			}
 		}
 
-#ifdef CONFIG_MTK_SRIL_SUPPORT
-		if (ccci_h.channel == CCCI_RIL_IPC0_RX
-			|| ccci_h.channel == CCCI_RIL_IPC1_RX) {
-			print_hex_dump(KERN_INFO, "2. mif: RX: ",
-				DUMP_PREFIX_NONE, 32, 1, skb->data, 32, 0);
-		}
-#endif
 		atomic_inc(&port->rx_pkg_cnt);
 		spin_unlock_irqrestore(&port->rx_skb_list.lock, flags);
 		//print log after unlock
