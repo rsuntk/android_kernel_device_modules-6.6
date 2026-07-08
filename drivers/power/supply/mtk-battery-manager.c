@@ -2124,7 +2124,6 @@ static int wt_check_protection_calculate_time_state(struct mtk_charger *pinfo)
 	}
 
 	old_batt_mode = batt_mode;
-	pr_err("%s: is_mode_changed=%d\n", __func__, is_mode_changed);
 	if (is_mode_changed) {
 		return CALCULATE_INIT_STATE;
 	}
