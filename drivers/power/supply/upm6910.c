@@ -63,7 +63,7 @@
 #endif
 #ifdef pr_warn
 #undef pr_warn
-#define pr_warn(fmt, ...) no_printk(KERN_WARN fmt, ##__VA_ARGS__)
+#define pr_warn(fmt, ...) no_printk(KERN_WARNING fmt, ##__VA_ARGS__)
 #endif
 #endif
 
