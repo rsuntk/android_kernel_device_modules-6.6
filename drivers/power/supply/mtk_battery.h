@@ -47,7 +47,7 @@
 #define	PROP_BATTERY_TEMPERATURE_ADC_TIMEOUT 10
 #define MAX_PROP_NAME_LEN 50
 
-#define BMLOG_DEFAULT_LEVEL BMLOG_DEBUG_LEVEL
+#define BMLOG_DEFAULT_LEVEL BMLOG_ERROR_LEVEL
 
 #define bm_err(gm, fmt, args...)   \
 do {\
