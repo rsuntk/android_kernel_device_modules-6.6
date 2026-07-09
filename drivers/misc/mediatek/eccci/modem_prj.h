@@ -27,7 +27,8 @@
 #include <linux/irq.h>
 #include <linux/interrupt.h>
 
-#define DEBUG_MODEM_IF
+//#define DEBUG_MODEM_IF
+
 #ifdef DEBUG_MODEM_IF
 #if 1
 #define DEBUG_MODEM_IF_LINK_TX
@@ -247,6 +248,8 @@ struct modem_data {
 #define FUNC	(__func__)
 #define CALLER	(__builtin_return_address(0))
 
+#ifdef DEBUG_MODEM_IF
+
 #define mif_err_limited(fmt, ...) \
 	printk_ratelimited(KERN_ERR LOG_TAG "%s: " pr_fmt(fmt), __func__, ##__VA_ARGS__)
 #define mif_err(fmt, ...) \
@@ -258,6 +261,15 @@ struct modem_data {
 #define mif_trace(fmt, ...) \
 	printk(KERN_DEBUG "mif: %s: %d: called(%pF): " fmt, \
 			__func__, __LINE__, __builtin_return_address(0), ##__VA_ARGS__)
+#else
+
+#define mif_err_limited(fmt, ...)    no_printk(fmt, ##__VA_ARGS__)
+#define mif_err(fmt, ...)            no_printk(fmt, ##__VA_ARGS__)
+#define mif_debug(fmt, ...)          no_printk(fmt, ##__VA_ARGS__)
+#define mif_info(fmt, ...)           no_printk(fmt, ##__VA_ARGS__)
+#define mif_trace(fmt, ...)          do { } while (0)
+
+#endif
 
 #ifdef CONFIG_OF
 #define mif_dt_read_enum(np, prop, dest) \
