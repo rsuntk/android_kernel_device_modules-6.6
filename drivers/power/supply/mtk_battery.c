@@ -28,8 +28,6 @@
 #include <linux/wait.h>		/* For wait queue*/
 #include <net/sock.h>		/* netlink */
 #include <linux/suspend.h>
-#include "mtk_battery.h"
-#include "mtk_battery_table.h"
 #if IS_ENABLED(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
 #endif
@@ -40,6 +38,9 @@
 #include <linux/of_platform.h>
 #include <linux/hardware_info.h>
 #endif
+
+#include "mtk_battery.h"
+#include "mtk_battery_table.h"
 
 #ifdef CONFIG_W2_CHARGER_PRIVATE
 static char* battery_name[] = {"W2_SCUD_4V4_5000mAh","W2_BYD_4V4_5000mAh"};

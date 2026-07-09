@@ -48,6 +48,25 @@
 #include <linux/regmap.h>
 #include "mtk_charger.h"
 
+#ifndef UPM6910_LOGGER
+#ifdef pr_info
+#undef pr_info
+#define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
+#endif
+#ifdef pr_err
+#undef pr_err
+#define pr_err(fmt, ...) no_printk(KERN_ERR fmt, ##__VA_ARGS__)
+#endif
+#ifdef pr_debug
+#undef pr_debug
+#define pr_debug(fmt, ...) no_printk(KERN_DEBUG fmt, ##__VA_ARGS__)
+#endif
+#ifdef pr_warn
+#undef pr_warn
+#define pr_warn(fmt, ...) no_printk(KERN_WARN fmt, ##__VA_ARGS__)
+#endif
+#endif
+
 #define POWER_DETECT_ICHG		1020
 #define POWER_DETECT_ICL		2000
 #define POWER_DETECT_VINDPM		4500
