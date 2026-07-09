@@ -29,6 +29,7 @@
 
 #if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
 #ifdef pr_info
+#undef pr_info
 #define pr_info(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
 #endif
 #endif

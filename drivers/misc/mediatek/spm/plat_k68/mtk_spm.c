@@ -33,6 +33,7 @@ DEFINE_SPINLOCK(__spm_lock);
 
 #if !IS_ENABLED(CONFIG_MTK_DRIVER_LOGGER)
 #ifdef printk_deferred
+#undef printk_deferred
 #define printk_deferred(fmt, ...) no_printk(KERN_INFO fmt, ##__VA_ARGS__)
 #endif
 #endif
