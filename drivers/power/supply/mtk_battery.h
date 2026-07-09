@@ -49,44 +49,46 @@
 
 #define BMLOG_DEFAULT_LEVEL BMLOG_DEBUG_LEVEL
 
+static bool bm_logging_enabled = false;
+
 #define bm_err(gm, fmt, args...)   \
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_ERROR_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_ERROR_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
 
 #define bm_warn(gm, fmt, args...)   \
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_WARNING_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_WARNING_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
 
 #define bm_notice(gm, fmt, args...)   \
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_NOTICE_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_NOTICE_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
 
 #define bm_info(gm, fmt, args...)   \
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_INFO_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_INFO_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
 
 #define bm_debug(gm, fmt, args...)   \
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_DEBUG_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_DEBUG_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
 
 #define bm_trace(gm, fmt, args...)\
 do {\
-	if (bat_get_debug_level(gm) >= BMLOG_TRACE_LEVEL) {	\
+	if (bm_logging_enabled && bat_get_debug_level(gm) >= BMLOG_TRACE_LEVEL) {	\
 		pr_notice("%s:" fmt, bat_get_gauge_name(gm), ##args);	\
 	}	\
 } while (0)
