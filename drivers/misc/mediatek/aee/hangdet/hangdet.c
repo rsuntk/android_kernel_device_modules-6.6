@@ -500,44 +500,6 @@ static void kwdt_time_sync(void)
 		(unsigned int)(tv_android.tv_nsec / 1000));
 }
 
-#if IS_ENABLED(CONFIG_ARM64)
-static const int irq_to_ipi_type(int irq)
-{
-	struct irq_desc **ipi_desc = ipi_desc_get();
-	struct irq_desc *desc = irq_to_desc(irq);
-	int nr_ipi = nr_ipi_get();
-	int i = 0;
-
-	if (!ipi_desc || !desc)
-		return -1;
-
-	for (i = 0; i < nr_ipi; i++)
-		if (ipi_desc[i] == desc)
-			return i;
-	return -1;
-}
-#else
-static const int irq_to_ipi_type(int irq)
-{
-	int temp_irq = 0;
-	int num = 0;
-	struct irq_desc *desc = irq_to_desc(irq);
-	struct irq_desc *temp_desc;
-
-	for_each_irq_desc(temp_irq, temp_desc) {
-		if (temp_desc->action && temp_desc->action->name) {
-			if (!strcmp(temp_desc->action->name, "IPI")) {
-				if (temp_desc == desc)
-					return num;
-				else
-					num++;
-			}
-		}
-	}
-	return -1;
-}
-#endif
-
 #if IS_ENABLED(CONFIG_MTK_HANG_DETECT_DB)
 #define MAX_HWT_IRQ_FILE_SIZE SZ_128K
 #define MAX_HWT_IRQ_BUF_SIZE (MAX_HWT_IRQ_FILE_SIZE / 2)
