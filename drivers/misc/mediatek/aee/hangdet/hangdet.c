@@ -805,16 +805,6 @@ static void aee_dump_timer_func(struct timer_list *t)
 	}
 }
 
-#if IS_ENABLED(CONFIG_SMP)
-#if !IS_ENABLED(CONFIG_ARM64)
-static u32 arch_timer_reg_read_tval(void)
-{
-	u32 val = 0;
-	asm volatile("mrc p15, 0, %0, c14, c3, 0" : "=r" (val));
-	return val;
-}
-#endif
-
 static void kwdt_process_kick(int local_bit, int cpu,
 				unsigned long curInterval, char msg_buf[],
 				unsigned int original_kicker)
