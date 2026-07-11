@@ -62,6 +62,7 @@
 #include <linux/pagemap.h>
 #include <linux/fs.h>
 #include <linux/local_lock.h>
+#include <trace/hooks/mm.h>
 
 #define ZSPAGE_MAGIC	0x58
 
@@ -118,10 +119,6 @@
 #define CLASS_BITS	8
 #define ISOLATED_BITS	5
 #define MAGIC_VAL_BITS	8
-
-#ifndef MAX
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-#endif
 
 #define ZS_MAX_PAGES_PER_ZSPAGE	(_AC(CONFIG_ZSMALLOC_CHAIN_SIZE, UL))
 
@@ -989,6 +986,9 @@ static struct zspage *alloc_zspage(struct zs_pool *pool,
 
 	if (!zspage)
 		return NULL;
+
+	if (!IS_ENABLED(CONFIG_COMPACTION))
+		gfp &= ~__GFP_MOVABLE;
 
 	zspage->magic = ZSPAGE_MAGIC;
 	migrate_lock_init(zspage);
@@ -2109,6 +2109,11 @@ static unsigned long zs_shrinker_count(struct shrinker *shrinker,
 	unsigned long pages_to_free = 0;
 	struct zs_pool *pool = container_of(shrinker, struct zs_pool,
 			shrinker);
+	bool bypass = false;
+
+	trace_android_vh_zs_shrinker_bypass(&bypass);
+	if (bypass)
+		return 0;
 
 	for (i = ZS_SIZE_CLASSES - 1; i >= 0; i--) {
 		class = pool->size_class[i];
@@ -2117,6 +2122,7 @@ static unsigned long zs_shrinker_count(struct shrinker *shrinker,
 
 		pages_to_free += zs_can_compact(class);
 	}
+	trace_android_vh_zs_shrinker_adjust(&pages_to_free);
 
 	return pages_to_free;
 }
