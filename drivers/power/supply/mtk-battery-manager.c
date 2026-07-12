@@ -21,7 +21,7 @@
 #include <linux/power_supply.h>
 #include <linux/regmap.h>
 #include <linux/sched/clock.h>
-#include <linux/reboot.h>	/*kernel_power_off*/
+#include <linux/reboot.h>
 #include <linux/suspend.h>
 #include <net/sock.h>
 #include <linux/rtc.h>
@@ -72,15 +72,15 @@ struct mtk_battery_manager *get_mtk_battery_manager(void)
 	static struct mtk_battery_manager *bm;
 	struct power_supply *psy;
 
-	if (bm == NULL) {
+	if (!bm) {
 		psy = power_supply_get_by_name("battery");
-		if (psy == NULL) {
+		if (!psy) {
 			pr_err("[%s]psy is not rdy\n", __func__);
 			return NULL;
 		}
 		bm = (struct mtk_battery_manager *)power_supply_get_drvdata(psy);
 		power_supply_put(psy);
-		if (bm == NULL) {
+		if (!bm) {
 			pr_err("[%s]mtk_battery_manager is not rdy\n", __func__);
 			return NULL;
 		}
@@ -110,10 +110,7 @@ int check_cap_level(int uisoc)
 
 int next_waketime(int polling)
 {
-	if (polling <= 0)
-		return 0;
-	else
-		return 10;
+	return (polling <= 0) ? 0 : 10;
 }
 
 static int shutdown_event_handler(struct mtk_battery *gm)
@@ -2207,9 +2204,7 @@ static int get_time_to_charge_full(struct battery_data *data)
 		return -1;
 	}
 
-	if (!bm)
-		bm = get_mtk_battery_manager();
-
+	bm = get_mtk_battery_manager();
 	if (!bm) {
 		pr_err("[%s]bm is not rdy\n", __func__);
 		return -1;
@@ -2329,8 +2324,7 @@ static int get_time_to_charge_full(struct battery_data *data)
 	if (wt_get_charge_source(pinfo) == SEC_BATTERY_CABLE_PDIC_APDO
 		&& (!pinfo->disable_quick_charge)) {
 		magic_current = select_apdo_magic_current(fgcurrent, capacity, wt_initial_time_interval);
-	}
-	else {
+	} else {
 		magic_current = select_basic_magic_current(fgcurrent, capacity, pinfo, wt_initial_time_interval);
 	}
 
@@ -2387,150 +2381,143 @@ static int get_time_to_charge_full(struct battery_data *data)
 	}
 
 	if ((ui_time_to_full >= 0) && (raw_time_to_full >= 0)) {
-	if (wt_time_now >= wt_time_old) {
-		wt_time_interval = wt_time_now - wt_time_old;
-	} else {
-		wt_time_interval = -1;
-	}
+		if (wt_time_now >= wt_time_old) {
+			wt_time_interval = wt_time_now - wt_time_old;
+		} else {
+			wt_time_interval = -1;
+		}
 
-	//old_ui_raw_time_diff = raw_time_to_full - old_ui_time_to_full;
+		if (ui_time_to_full == raw_time_to_full) {
+			ui_raw_time_diff = 0;
+			wt_compensation_state = COMPENSATION_LEVEL_REDUCE_NORMAL;
+		} else if (ui_time_to_full < raw_time_to_full) {
+			ui_raw_time_diff = raw_time_to_full - ui_time_to_full;
+			wt_compensation_state = COMPENSATION_LEVEL_REDUCE_SLOW;
+		} else if (ui_time_to_full > raw_time_to_full) {
+			ui_raw_time_diff = ui_time_to_full - raw_time_to_full;
+			wt_compensation_state = COMPENSATION_LEVEL_REDUCE_QUICK;
+		}
 
-	if (ui_time_to_full == raw_time_to_full) {
-		ui_raw_time_diff = 0;
-		wt_compensation_state = COMPENSATION_LEVEL_REDUCE_NORMAL;
-	} else if (ui_time_to_full < raw_time_to_full) {
-		ui_raw_time_diff = raw_time_to_full - ui_time_to_full;
-		wt_compensation_state = COMPENSATION_LEVEL_REDUCE_SLOW;
-	} else if (ui_time_to_full > raw_time_to_full) {
-		ui_raw_time_diff = ui_time_to_full - raw_time_to_full;
-		wt_compensation_state = COMPENSATION_LEVEL_REDUCE_QUICK;
-	}
-
-	switch (wt_compensation_state) {
-		case COMPENSATION_LEVEL_REDUCE_NORMAL:
-			wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
-			time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
-			break;
-		case COMPENSATION_LEVEL_REDUCE_SLOW:
-			if (time_to_full_update_th == WT_INTERMAL_TIME_MAX) {
-				time_to_full_update_th = WT_INTERMAL_TIME_HIGH2;
-			}
-
-			time_to_full_update_th = wt_get_slow_update_th(wt_initial_time_interval,
-				time_to_full_update_th, capacity);
-
-			wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
-
-			critical_soc = 95;
-#if defined (ONEUI_6P1_CHG_PROTECION_ENABLE)
-			if (pinfo->batt_full_capacity > POWER_SUPPLY_CAPACITY_100) {
-				critical_soc = 75;
-				soc_maximum_offset = wt_get_batt_full_maximum_offset(pinfo);
-				if (soc_maximum_offset > 0) {
-					critical_soc += soc_maximum_offset * CHARGE_SOC_OFFSET;
-				}
-				if (critical_soc > 95) {
-					critical_soc = 95;
-				}
-			}
-#endif
-			if (capacity >= critical_soc) {
-				time_critical_update_th = wt_check_slow_critical_update_th(ui_raw_time_diff,
-				ui_time_to_full, capacity, critical_soc);
-				if (time_critical_update_th > 0) {
-					time_to_full_update_th = time_critical_update_th;
-				}
-			}
-
-			if (wt_check_min_remain_time(pinfo, ui_time_to_full, capacity) > 0) {
-				time_to_full_update_th = WT_INTERMAL_TIME_MAX;
-			}
-
-			break;
-		case COMPENSATION_LEVEL_REDUCE_QUICK:
-			if (time_to_full_update_th == WT_INTERMAL_TIME_MAX) {
+		switch (wt_compensation_state) {
+			case COMPENSATION_LEVEL_REDUCE_NORMAL:
+				wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
 				time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
-			}
+				break;
+			case COMPENSATION_LEVEL_REDUCE_SLOW:
+				if (time_to_full_update_th == WT_INTERMAL_TIME_MAX) {
+					time_to_full_update_th = WT_INTERMAL_TIME_HIGH2;
+				}
 
-			time_to_full_update_th = wt_get_quick_update_th(wt_initial_time_interval,
-				time_to_full_update_th, capacity);
+				time_to_full_update_th = wt_get_slow_update_th(wt_initial_time_interval,
+					time_to_full_update_th, capacity);
 
-			wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
+				wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
 
-			if (time_to_full_update_th <= WT_INTERMAL_TIME_LOW2) {
-				wt_time_to_full_offset = WT_INTERMAL_TIME_HIGH2;
-			}
-
-			critical_soc = 97;
+				critical_soc = 95;
 #if defined (ONEUI_6P1_CHG_PROTECION_ENABLE)
-			if (pinfo->batt_full_capacity > POWER_SUPPLY_CAPACITY_100) {
-				critical_soc = 76;
-				soc_maximum_offset = wt_get_batt_full_maximum_offset(pinfo);
-				if (soc_maximum_offset > 0) {
-					critical_soc += soc_maximum_offset * CHARGE_SOC_OFFSET;
+				if (pinfo->batt_full_capacity > POWER_SUPPLY_CAPACITY_100) {
+					critical_soc = 75;
+					soc_maximum_offset = wt_get_batt_full_maximum_offset(pinfo);
+					if (soc_maximum_offset > 0) {
+						critical_soc += soc_maximum_offset * CHARGE_SOC_OFFSET;
+					}
+					if (critical_soc > 95) {
+						critical_soc = 95;
+					}
 				}
-				if (critical_soc > 97) {
-					critical_soc = 97;
-				}
-			}
 #endif
-			if (capacity >= critical_soc) {
-				wt_time_critical_offset = wt_check_quick_critical_offset(ui_raw_time_diff,
-				raw_time_to_full, capacity, critical_soc);
-				if (wt_time_critical_offset > 0) {
-					wt_time_to_full_offset = wt_time_critical_offset;
+				if (capacity >= critical_soc) {
+					time_critical_update_th = wt_check_slow_critical_update_th(ui_raw_time_diff,
+					ui_time_to_full, capacity, critical_soc);
+					if (time_critical_update_th > 0) {
+						time_to_full_update_th = time_critical_update_th;
+					}
 				}
-			}
 
-			break;
-		default:
-			wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
-			time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
-			break;
-	}
+				if (wt_check_min_remain_time(pinfo, ui_time_to_full, capacity) > 0) {
+					time_to_full_update_th = WT_INTERMAL_TIME_MAX;
+				}
 
-	if ((time_to_full_update_th < WT_INTERMAL_TIME_MAX) && (wt_time_interval >= time_to_full_update_th)) {
-		is_time_need_update = true;
-	} else {
-		is_time_need_update = false;
-	}
+				break;
+			case COMPENSATION_LEVEL_REDUCE_QUICK:
+				if (time_to_full_update_th == WT_INTERMAL_TIME_MAX) {
+					time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
+				}
 
-	if (is_time_need_update) {
-		if (ui_time_to_full >= (wt_time_to_full_offset + WT_INTERMAL_TIME_NORMAL)) {
-			ui_time_to_full = ui_time_to_full - wt_time_to_full_offset;
-		} else {
-			ui_time_to_full = WT_INTERMAL_TIME_NORMAL;
+				time_to_full_update_th = wt_get_quick_update_th(wt_initial_time_interval,
+					time_to_full_update_th, capacity);
+
+				wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
+
+				if (time_to_full_update_th <= WT_INTERMAL_TIME_LOW2) {
+					wt_time_to_full_offset = WT_INTERMAL_TIME_HIGH2;
+				}
+
+				critical_soc = 97;
+#if defined (ONEUI_6P1_CHG_PROTECION_ENABLE)
+				if (pinfo->batt_full_capacity > POWER_SUPPLY_CAPACITY_100) {
+					critical_soc = 76;
+					soc_maximum_offset = wt_get_batt_full_maximum_offset(pinfo);
+					if (soc_maximum_offset > 0) {
+						critical_soc += soc_maximum_offset * CHARGE_SOC_OFFSET;
+					}
+					if (critical_soc > 97) {
+						critical_soc = 97;
+					}
+				}
+#endif
+				if (capacity >= critical_soc) {
+					wt_time_critical_offset = wt_check_quick_critical_offset(ui_raw_time_diff,
+					raw_time_to_full, capacity, critical_soc);
+					if (wt_time_critical_offset > 0) {
+						wt_time_to_full_offset = wt_time_critical_offset;
+					}
+				}
+
+				break;
+			default:
+				wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
+				time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
+				break;
 		}
-		is_time_need_update = false;
-		wt_time_old = wt_time_now;
-	}
 
-	if (raw_time_to_full == 0) {
-		ui_time_to_full = 0;
-		wt_time_old = wt_time_now;
-		is_time_need_update = false;
-	}
-
-	//old_raw_time_to_full = raw_time_to_full;
-
-	//wt_time_interval < 0, using old method when get time error. This situation should not occur, under normal circumstances
-	if (wt_time_interval >= 0) {
-		if (ui_time_to_full <= old_ui_time_to_full) {
-			time_to_charge_full = ui_time_to_full;
-			old_ui_time_to_full = ui_time_to_full;
+		if ((time_to_full_update_th < WT_INTERMAL_TIME_MAX) && (wt_time_interval >= time_to_full_update_th)) {
+			is_time_need_update = true;
 		} else {
-			//time_to_charge_full = old_ui_time_to_full;
-		}
-	} else {
-			raw_time_to_full = -1;
-			ui_time_to_full = -1;
-			old_ui_time_to_full = ui_time_to_full;
-			wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
-			time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
-			wt_time_now = 0;
-			wt_time_old = 0;
 			is_time_need_update = false;
-	}
+		}
+
+		if (is_time_need_update) {
+			if (ui_time_to_full >= (wt_time_to_full_offset + WT_INTERMAL_TIME_NORMAL)) {
+				ui_time_to_full = ui_time_to_full - wt_time_to_full_offset;
+			} else {
+				ui_time_to_full = WT_INTERMAL_TIME_NORMAL;
+			}
+			is_time_need_update = false;
+			wt_time_old = wt_time_now;
+		}
+
+		if (raw_time_to_full == 0) {
+			ui_time_to_full = 0;
+			wt_time_old = wt_time_now;
+			is_time_need_update = false;
+		}
+
+		if (wt_time_interval >= 0) {
+			if (ui_time_to_full <= old_ui_time_to_full) {
+				time_to_charge_full = ui_time_to_full;
+				old_ui_time_to_full = ui_time_to_full;
+			}
+		} else {
+				raw_time_to_full = -1;
+				ui_time_to_full = -1;
+				old_ui_time_to_full = ui_time_to_full;
+				wt_time_to_full_offset = WT_INTERMAL_TIME_NORMAL;
+				time_to_full_update_th = WT_INTERMAL_TIME_NORMAL;
+				wt_time_now = 0;
+				wt_time_old = 0;
+				is_time_need_update = false;
+		}
 	}
 
 	return time_to_charge_full;
@@ -2670,7 +2657,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 			val->intval = bs_data->bat_capacity;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out)
 				curr_now += bm_update_psy_property(bm->gm1, CURRENT_NOW);
@@ -2682,7 +2668,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		ret = 0;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_AVG:
-
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out)
 				curr_avg += bm_update_psy_property(bm->gm1, CURRENT_AVG);
@@ -2694,7 +2679,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		ret = 0;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL:
-
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out)
 				qmax += bm_update_psy_property(bm->gm1, QMAX_DESIGN);
@@ -2706,7 +2690,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		ret = 0;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out)
 				qmax += bm_update_psy_property(bm->gm1, QMAX_DESIGN);
@@ -2717,7 +2700,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		val->intval = bs_data->bat_capacity * qmax;
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-
 		count = 0;
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out) {
@@ -2736,7 +2718,6 @@ static int bs_psy_get_property(struct power_supply *psy,
 		ret = 0;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-
 		count = 0;
 		if (bm->gm1 != NULL)
 			if(!bm->gm1->bat_plug_out) {
@@ -3290,10 +3271,9 @@ static DEVICE_ATTR_RO(new_charge_type);
 
 static ssize_t resistance_id_show(struct device *dev,struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm;
-
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
+	static struct mtk_battery_manager *bm = get_mtk_battery_manager();
+	if (!bm)
+		return 0;
 	return sprintf(buf, "%d\n", bm->gm1->battery_id);
 }
 static DEVICE_ATTR_RO(resistance_id);
@@ -3348,29 +3328,35 @@ static DEVICE_ATTR(set_battery_cycle, 0664, show_set_battery_cycle,
 
 static ssize_t battery_cycle_show(struct device *dev,struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm;
+	static struct mtk_battery_manager *bm = get_mtk_battery_manager();
 	int batt_cycle_cnt = 0;
 	int qmax = 0, cycle = 0;
 
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
+	if (unlikely(!bm))
+		goto skip;
 
-	if (bm->gm1 != NULL)
-		if(!bm->gm1->bat_plug_out) {
+	if (bm->gm1 != NULL) {
+		if (!bm->gm1->bat_plug_out) {
 			cycle += (bm->gm1->bat_cycle + 1) *
 				bm_update_psy_property(bm->gm1, QMAX_DESIGN);
 			qmax += bm_update_psy_property(bm->gm1, QMAX_DESIGN);
 		}
-	if (bm->gm2 != NULL)
-		if(!bm->gm2->bat_plug_out) {
+	}
+
+	if (bm->gm2 != NULL) {
+		if (!bm->gm2->bat_plug_out) {
 			cycle += (bm->gm2->bat_cycle + 1) *
 				bm_update_psy_property(bm->gm2, QMAX_DESIGN);
 			qmax += bm_update_psy_property(bm->gm2, QMAX_DESIGN);
 		}
+	}
+
 	if (qmax != 0)
 		batt_cycle_cnt = cycle / qmax;
+
 	pr_err("[%s] batt_cycle_cnt=%d\n", __func__, batt_cycle_cnt);
 
+skip:
 	return sprintf(buf, "%d\n", batt_cycle_cnt);
 }
 static DEVICE_ATTR_RO(battery_cycle);
@@ -3488,17 +3474,21 @@ static ssize_t batt_current_event_show(struct device *dev,struct device_attribut
 	struct power_supply *chg_psy = NULL;
 	static struct mtk_battery_manager *bm;
 
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
+	bm = get_mtk_battery_manager();
 	bs_data = &bm->bs_data;
 	chg_psy = bs_data->chg_psy;
 
+	if (unlikely(!bm)) {
+		pr_err("[%s]bm is not rdy\n", __func__);
+		return -1;
+	}
+
 	bat_psy = power_supply_get_by_name("mtk-master-charger");
-	if (bat_psy == NULL)
+	if (!bat_psy)
 		return -ENODEV;
 
 	info = (struct mtk_charger *)power_supply_get_drvdata(bat_psy);
-	if (info == NULL) {
+	if (!info) {
 		pr_err("[%s]show_batt_current_event is not rdy\n", __func__);
 		return -1;
 	}
@@ -3624,13 +3614,17 @@ static ssize_t show_batt_charging_source(struct device *dev,
 	struct battery_data *bs_data = NULL;
 	union power_supply_propval online = {0, };
 
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
+	bm = get_mtk_battery_manager();
 	bs_data = &bm->bs_data;
 	chg_psy = bs_data->chg_psy;
 
+	if (unlikely(!bm)) {
+		pr_err("[%s] bm == NULL\n", __func__);
+		return -1;
+	}
+
 	bat_psy = power_supply_get_by_name("mtk-master-charger");
-	if(bat_psy == NULL) {
+	if (!bat_psy) {
 		pr_err("[%s] bat_psy == NULL\n", __func__);
 		return -ENODEV;
 	}
@@ -3725,19 +3719,23 @@ static ssize_t show_charging_type(struct device *dev,
 	int batt_charging_type = SEC_BATTERY_CABLE_NONE;
 	int i = 0;
 
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
+	bm = get_mtk_battery_manager();
 	bs_data = &bm->bs_data;
 	chg_psy = bs_data->chg_psy;
 
+	if (unlikely(!bm)) {
+		pr_err("[%s] bm == NULL\n", __func__);
+		return -1;
+	}
+
 	bat_psy = power_supply_get_by_name("mtk-master-charger");
-	if(bat_psy == NULL) {
+	if (!bat_psy) {
 		pr_err("[%s] bat_psy == NULL\n", __func__);
 		return -ENODEV;
 	}
 
 	pinfo = (struct mtk_charger *)power_supply_get_drvdata(bat_psy);
-	if (pinfo == NULL) {
+	if (!pinfo) {
 		pr_err("[%s]show_batt_current_event is not rdy\n", __func__);
 		return -1;
 	}
@@ -3904,11 +3902,8 @@ void mtk_bm_handler(struct mtk_battery *gm,
 {
 	static struct mtk_battery_manager *bm;
 
-	//pr_err("[%s]id:%d =>cmd:%d subcmd:%d %d hash %d\n", __func__,
-	//	gm->id, reply_msg->cmd, reply_msg->subcmd, reply_msg->subcmd_para1, reply_msg->hash);
-
 	bm = gm->bm;
-	if (bm == NULL)
+	if (!bm)
 		bm = get_mtk_battery_manager();
 
 	if (bm != NULL) {
@@ -3945,24 +3940,16 @@ static void mtk_battery_manager_handler(struct mtk_battery_manager *bm, void *nl
 	struct mtk_battery *gm;
 	bool send = true;
 
-	if (bm == NULL) {
-		bm = get_mtk_battery_manager();
-		if (bm == NULL)
-			return;
-	}
+	bm = get_mtk_battery_manager();
+	if (!bm)
+		return;
+
 	msg = nl_data;
-//	ret_msg->nl_cmd = msg->nl_cmd;
 	ret_msg->cmd = msg->cmd;
 	ret_msg->instance_id = msg->instance_id;
 	ret_msg->hash = msg->hash;
 	ret_msg->datatype = msg->datatype;
 
-
-	//pr_err("[%s] gm id:%d cmd:%d type:%d hash:%d\n",
-	//	__func__, msg->instance_id, msg->cmd, msg->datatype, msg->hash);
-
-	//msleep(3000);
-	//mdelay(3000);
 	if (msg->instance_id == 0)
 		gm = bm->gm1;
 	else if (msg->instance_id == 1)
@@ -4038,7 +4025,7 @@ static void mtk_battery_manager_handler(struct mtk_battery_manager *bm, void *nl
 	break;
 	}
 
-	if (send == true)
+	if (send)
 		mtk_bm_send_to_user(bm, bm->fgd_pid, seq, ret_msg);
 
 }
@@ -4052,15 +4039,16 @@ void mtk_bm_netlink_handler(struct sk_buff *skb)
 	int size = 0;
 	static struct mtk_battery_manager *bm;
 
-	if (bm == NULL)
-		bm = get_mtk_battery_manager();
-
+	bm = get_mtk_battery_manager();
 	nlh = (struct nlmsghdr *)skb->data;
 	seq = nlh->nlmsg_seq;
-
 	data = NLMSG_DATA(nlh);
-
 	fgd_msg = (struct afw_header *)data;
+
+	if (unlikely(!bm)) {
+		pr_err("[%s]battery manager is not ready!\n", __func__);
+		return;
+	}
 
 	if (fgd_msg->identity != AFW_MAGIC) {
 		pr_err("[%s]not correct MTKFG netlink packet!%d\n",
@@ -4070,27 +4058,12 @@ void mtk_bm_netlink_handler(struct sk_buff *skb)
 
 	size = fgd_msg->ret_data_len + AFW_MSG_HEADER_LEN;
 
-	if (size > (PAGE_SIZE << 1))
-		fgd_ret_msg = vmalloc(size);
-	else {
-		if (in_interrupt())
-			fgd_ret_msg = kmalloc(size, GFP_ATOMIC);
-		else
-			fgd_ret_msg = kmalloc(size, GFP_KERNEL);
-	}
-
-	if (fgd_ret_msg == NULL) {
-		if (size > PAGE_SIZE)
-			fgd_ret_msg = vmalloc(size);
-
-		if (fgd_ret_msg == NULL)
-			return;
-	}
+	fgd_ret_msg = kvmalloc(size, (in_interrupt() ? GFP_ATOMIC : GFP_KERNEL));
+	if (!fgd_ret_msg)
+		return;
 
 	memset(fgd_ret_msg, 0, size);
-
 	mtk_battery_manager_handler(bm, data, fgd_ret_msg, seq);
-
 	kvfree(fgd_ret_msg);
 
 #ifdef WY_FIX
@@ -4123,7 +4096,7 @@ static int mtk_bm_create_netlink(struct platform_device *pdev)
 	bm->mtk_bm_sk =
 		netlink_kernel_create(&init_net, NETLINK_FGD, &cfg);
 
-	if (bm->mtk_bm_sk == NULL) {
+	if (!bm->mtk_bm_sk) {
 		pr_err("netlink_kernel_create error\n");
 		return -EIO;
 	}
@@ -4136,8 +4109,8 @@ static int mtk_bm_create_netlink(struct platform_device *pdev)
 
 void bm_custom_init_from_header(struct mtk_battery_manager *bm)
 {
-	bm->vsys_det_voltage1  = VSYS_DET_VOLTAGE1;
-	bm->vsys_det_voltage2  = VSYS_DET_VOLTAGE2;
+	bm->vsys_det_voltage1 = VSYS_DET_VOLTAGE1;
+	bm->vsys_det_voltage2 = VSYS_DET_VOLTAGE2;
 }
 
 void bm_custom_init_from_dts(struct platform_device *pdev, struct mtk_battery_manager *bm)
@@ -4168,7 +4141,6 @@ static int mtk_bm_probe(struct platform_device *pdev)
 	struct mtk_gauge *gauge;
 	int ret = 0;
 
-	pr_err("[%s] 20231205-1\n", __func__);
 	bm = devm_kzalloc(&pdev->dev, sizeof(*bm), GFP_KERNEL);
 	if (!bm)
 		return -ENOMEM;
@@ -4179,14 +4151,12 @@ static int mtk_bm_probe(struct platform_device *pdev)
 	bm_custom_init_from_header(bm);
 	bm_custom_init_from_dts(pdev, bm);
 
-	psy = devm_power_supply_get_by_phandle(&pdev->dev,
-								 "gauge1");
-
-	if (psy == NULL || IS_ERR(psy)) {
+	psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge1");
+	if (IS_ERR_OR_NULL(psy)) {
 		pr_err("[%s]can not get gauge1 psy\n", __func__);
 	} else {
 		gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
-		if (gauge != NULL) {
+		if (gauge) {
 			bm->gm1 = gauge->gm;
 			bm->gm1->id = 0;
 			bm->gm1->bm = bm;
@@ -4194,10 +4164,9 @@ static int mtk_bm_probe(struct platform_device *pdev)
 		} else
 			pr_err("[%s]gauge1 is not rdy\n", __func__);
 	}
-	psy = devm_power_supply_get_by_phandle(&pdev->dev,
-								 "gauge2");
 
-	if (psy == NULL || IS_ERR(psy)) {
+	psy = devm_power_supply_get_by_phandle(&pdev->dev, "gauge2");
+	if (IS_ERR_OR_NULL(psy)) {
 		pr_err("[%s]can not get gauge2 psy\n", __func__);
 	} else {
 		gauge = (struct mtk_gauge *)power_supply_get_drvdata(psy);
@@ -4227,18 +4196,14 @@ static int mtk_bm_probe(struct platform_device *pdev)
 	}
 
 
-	bm->chan_vsys = devm_iio_channel_get(
-		&pdev->dev, "vsys");
+	bm->chan_vsys = devm_iio_channel_get(&pdev->dev, "vsys");
 	if (IS_ERR(bm->chan_vsys)) {
 		ret = PTR_ERR(bm->chan_vsys);
 		pr_err("vsys auxadc get fail, ret=%d\n", ret);
 	}
 
 	bm_check_bootmode(&pdev->dev, bm);
-
 	init_waitqueue_head(&bm->wait_que);
-
-
 	bm->bm_wakelock = wakeup_source_register(NULL, "battery_manager_wakelock");
 	spin_lock_init(&bm->slock);
 
