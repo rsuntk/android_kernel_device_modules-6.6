@@ -3446,7 +3446,9 @@ static DEVICE_ATTR_RO(new_charge_type);
 static ssize_t resistance_id_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm = get_mtk_battery_manager();
+	static struct mtk_battery_manager *bm = NULL;
+
+	bm = get_mtk_battery_manager();
 	if (!bm)
 		return 0;
 	return sprintf(buf, "%d\n", bm->gm1->battery_id);
@@ -3505,10 +3507,11 @@ static DEVICE_ATTR(set_battery_cycle, 0664, show_set_battery_cycle,
 static ssize_t battery_cycle_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm = get_mtk_battery_manager();
+	static struct mtk_battery_manager *bm = NULL;
 	int batt_cycle_cnt = 0;
 	int qmax = 0, cycle = 0;
 
+	bm = get_mtk_battery_manager();
 	if (unlikely(!bm))
 		goto skip;
 
