@@ -1654,16 +1654,15 @@ static int wt_get_battery_remain_mah(struct mtk_battery_manager *gm,
 	int soc_maximum_offset = 0;
 #endif
 
-	if (gm == NULL)
+	if (!gm)
 		return -1;
-
-	if (pinfo == NULL)
+	if (!pinfo)
 		return -1;
 
 	capacity = soc;
-	if (capacity < 0) {
+	if (capacity < 0)
 		return -1;
-	}
+
 	bat_cycle = wt_get_batt_cycle_cnt(gm);
 
 	if (bat_cycle < 199) {
@@ -3446,7 +3445,7 @@ static DEVICE_ATTR_RO(new_charge_type);
 static ssize_t resistance_id_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm = NULL;
+	struct mtk_battery_manager *bm;
 
 	bm = get_mtk_battery_manager();
 	if (!bm)
@@ -3507,7 +3506,7 @@ static DEVICE_ATTR(set_battery_cycle, 0664, show_set_battery_cycle,
 static ssize_t battery_cycle_show(struct device *dev,
 				  struct device_attribute *attr, char *buf)
 {
-	static struct mtk_battery_manager *bm = NULL;
+	struct mtk_battery_manager *bm;
 	int batt_cycle_cnt = 0;
 	int qmax = 0, cycle = 0;
 
@@ -3658,7 +3657,7 @@ static ssize_t batt_current_event_show(struct device *dev,
 	struct battery_data *bs_data;
 	union power_supply_propval online;
 	struct power_supply *chg_psy = NULL;
-	static struct mtk_battery_manager *bm;
+	struct mtk_battery_manager *bm;
 
 	bm = get_mtk_battery_manager();
 	bs_data = &bm->bs_data;
@@ -3799,7 +3798,7 @@ static ssize_t show_batt_charging_source(struct device *dev,
 	struct power_supply *bat_psy = NULL;
 	struct mtk_charger *pinfo = NULL;
 	struct power_supply *chg_psy = NULL;
-	static struct mtk_battery_manager *bm;
+	struct mtk_battery_manager *bm;
 	struct battery_data *bs_data = NULL;
 	union power_supply_propval online = {
 		0,
@@ -3905,7 +3904,7 @@ static ssize_t show_charging_type(struct device *dev,
 	struct power_supply *bat_psy = NULL;
 	struct mtk_charger *pinfo = NULL;
 	struct power_supply *chg_psy = NULL;
-	static struct mtk_battery_manager *bm;
+	struct mtk_battery_manager *bm;
 	struct battery_data *bs_data = NULL;
 	union power_supply_propval online = {
 		0,
@@ -4095,23 +4094,28 @@ void mtk_bm_send_to_user(struct mtk_battery_manager *bm, u32 pid, int seq,
 void mtk_bm_handler(struct mtk_battery *gm, int seq,
 		    struct afw_header *reply_msg)
 {
-	static struct mtk_battery_manager *bm;
+	struct mtk_battery_manager *bm;
+
+	if (unlikely(!gm)) {
+		pr_err("[%s] gm is NULL\n", __func__);
+		return;
+	}
 
 	bm = gm->bm;
 	if (!bm)
 		bm = get_mtk_battery_manager();
 
-	if (bm != NULL) {
-		if (bm->gm1 == gm) {
-			reply_msg->instance_id = gm->id;
-			mtk_bm_send_to_user(bm, bm->fgd_pid, seq, reply_msg);
-		} else if (bm->gm2 == gm) {
-			reply_msg->instance_id = gm->id;
-			mtk_bm_send_to_user(bm, bm->fgd_pid, seq, reply_msg);
-		} else
-			pr_err("[%s]gm is incorrect !n", __func__);
-	} else
-		pr_err("[%s]bm is incorrect !n", __func__);
+	if (unlikely(!bm)) {
+		pr_err("[%s] bm is incorrect!\n", __func__);
+		return;
+	}
+
+	if (likely(bm->gm1 == gm || bm->gm2 == gm)) {
+		reply_msg->instance_id = gm->id;
+		mtk_bm_send_to_user(bm, bm->fgd_pid, seq, reply_msg);
+	} else {
+		pr_err("[%s]gm is incorrect!\n", __func__);
+	}
 }
 
 static void fg_cmd_check(struct afw_header *msg)
@@ -4231,7 +4235,7 @@ void mtk_bm_netlink_handler(struct sk_buff *skb)
 	struct nlmsghdr *nlh;
 	struct afw_header *fgd_msg, *fgd_ret_msg;
 	int size = 0;
-	static struct mtk_battery_manager *bm;
+	struct mtk_battery_manager *bm;
 
 	bm = get_mtk_battery_manager();
 	nlh = (struct nlmsghdr *)skb->data;
