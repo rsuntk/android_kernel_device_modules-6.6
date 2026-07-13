@@ -6,6 +6,13 @@ set -e
 DEVICE_MODULES_DIR=$(basename $(dirname $0))
 source "${DEVICE_MODULES_DIR}/kernel/kleaf/_setup_env.sh"
 
+DISABLE_STAMP=${DISABLE_STAMP:-false}
+OPTIONAL_ARGS=()
+
+if [ "$DISABLE_STAMP" != "true" ]; then
+OPTIONAL_ARGS+=("--config=stamp")
+fi
+
 build_scope=internal
 if [ ! -d "vendor/mediatek/tests/kernel" ]
 then
@@ -22,7 +29,7 @@ fi
 KLEAF_DIST_TARGET=//${DEVICE_MODULES_DIR}:${PROJECT}_${build_scope}_dist.${MODE}
 
 KLEAF_OUT=("--output_user_root=${OUT_DIR} --output_base=${OUT_DIR}/bazel/output_user_root/output_base")
-KLEAF_ARGS=("${DEBUG_ARGS} --config=stamp ${SANDBOX_ARGS} \
+KLEAF_ARGS=("${DEBUG_ARGS} ${OPTIONAL_ARGS[@]} ${SANDBOX_ARGS} \
 	--repo_manifest=${ROOT_DIR}/${DEVICE_MODULES_DIR}/fake_manifest.xml \
 	--experimental_writable_outputs \
 	--noenable_bzlmod \
