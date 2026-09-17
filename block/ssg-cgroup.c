@@ -16,6 +16,8 @@
 
 static struct blkcg_policy ssg_blkcg_policy;
 
+
+
 #define CPD_TO_SSG_BLKCG(_cpd) \
 	container_of((_cpd), struct ssg_blkcg, cpd)
 #define BLKCG_TO_SSG_BLKCG(_blkcg) \
@@ -31,6 +33,8 @@ static struct blkcg_policy ssg_blkcg_policy;
 #define MIN_SCHED_TAGS		32
 #define MIN_AVAILABLE_RATIO	30 /* note: max_async_write_ratio is 25% */
 #define MAX_AVAILABLE_RATIO	100
+
+
 
 static struct blkcg_policy_data *ssg_blkcg_cpd_alloc(gfp_t gfp)
 {
